@@ -52,3 +52,10 @@ async def test_scroll_adds_up_to_the_requested_distance():
 async def test_unknown_action_is_reported_clearly():
     with pytest.raises(ScriptError, match="unknown step 'jump'"):
         await collect({"actions": [{"jump": 1}]})
+
+
+async def test_swipe_moves_the_pointer_against_the_scroll_and_looks_pressed():
+    frames = await collect({"start": [50, 80], "actions": [{"scroll": {"by": [0, 300]}, "dur": 500, "swipe": True}]})
+    assert sum(f.scroll[1] for f in frames) == pytest.approx(300)
+    assert frames[-1].y < 80  # the finger travelled up while the page scrolled down
+    assert any(f.touch for f in frames) and not any(f.down for f in frames)

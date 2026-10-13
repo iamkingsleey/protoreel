@@ -21,6 +21,7 @@ Script actions (run in order)
   {"key": "Enter"}                               press one key (Playwright key names)
   {"type": "Hello", "delay": 70}                 type text, one character every 70 ms
   {"scroll": {"by": [0, 400]} | {"to": POINT}, "dur": 800}  scroll the page smoothly
+  {"scroll": {"by": [0, 400]}, "swipe": true}    the same, with the pointer swiping like a finger
 
 A POINT is any of:
   [x, y]                  CSS pixels in the viewport
@@ -55,6 +56,7 @@ class FrameInput:
     keys: list[str] = field(default_factory=list)  # keys pressed this frame
     text: str = ""  # characters typed this frame
     scroll: Point = (0.0, 0.0)  # page scroll this frame, in CSS px
+    touch: bool = False  # draw the pointer pressed without pressing the mouse (a finger swiping)
 
 
 def ease(name: str, t: float) -> float:
@@ -184,10 +186,15 @@ async def script_frames(
                     yield FrameInput(x, y, down)
 
         elif kind == "scroll":
+            travel = (0.0, 0.0)
+            if action.get("swipe"):
+                travel = await resolve(["0%", "32%"])  # how far a thumb travels: about a third of the screen
             async for frame in _scroll(
-                action["scroll"], resolve, duration if "dur" in action else 800, curve, x, y, down, fps
+                action["scroll"], resolve, duration if "dur" in action else 800, curve, x, y, down, fps, travel[1]
             ):
                 yield frame
+                last = frame
+            x, y = last.x, last.y
 
         else:
             raise ScriptError(
@@ -220,8 +227,18 @@ async def _glide(
 
 
 async def _scroll(
-    spec, resolve: Resolver, duration: float, curve: str, x: float, y: float, down: bool, fps: int
+    spec,
+    resolve: Resolver,
+    duration: float,
+    curve: str,
+    x: float,
+    y: float,
+    down: bool,
+    fps: int,
+    swipe: float = 0.0,
 ) -> AsyncIterator[FrameInput]:
+    """Scroll by steps. With `swipe` (max thumb travel in px) the pointer moves against the
+    scroll, pressed-looking, like a finger dragging the page."""
     if isinstance(spec, dict) and "by" in spec:
         dx, dy = (float(v) for v in spec["by"])
     else:
@@ -230,10 +247,11 @@ async def _scroll(
         tx, ty = await resolve(point)
         mid_x, mid_y = await resolve(["50%", "50%"])
         dx, dy = tx - mid_x, ty - mid_y
-    steps = frames_for(duration, fps)
+    steps = max(1, frames_for(duration, fps))
+    thumb = -math.copysign(min(abs(dy), swipe), dy) if swipe and dy else 0.0
     done_x = done_y = 0.0
     for i in range(1, steps + 1):
         k = ease(curve, i / steps)
         step_x, step_y = dx * k - done_x, dy * k - done_y
         done_x, done_y = dx * k, dy * k
-        yield FrameInput(x, y, down, scroll=(step_x, step_y))
+        yield FrameInput(x, y + thumb * k, down, scroll=(step_x, step_y), touch=bool(swipe) and i < steps)

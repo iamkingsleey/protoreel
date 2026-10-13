@@ -36,5 +36,9 @@
     }
     const cbs = [...raf.values()]; raf.clear();
     for (const cb of cbs) { try { cb(now); } catch (e) { console.error(e); } }
+    // iframes have their own clock: move them forward too, or an app shown inside a device frame stands still
+    for (let i = 0; i < window.frames.length; i++) {
+      try { const child = window.frames[i]; if (child.__advance) child.__advance(ms); } catch (e) {}  // cross-origin frames are skipped
+    }
   };
 })();

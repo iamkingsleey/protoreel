@@ -104,6 +104,7 @@ A script is a list of actions, played in order. Elements are found with CSS sele
 | `{"key": "Enter"}` | press a key ([names](https://playwright.dev/docs/api/class-keyboard#keyboard-press)) |
 | `{"type": "Hello", "delay": 70}` | type text, one character every 70 ms |
 | `{"scroll": {"by": [0, 400]} or {"to": POINT}, "dur": 800}` | scroll smoothly |
+| `{"scroll": ..., "swipe": true}` | scroll with the pointer swiping like a finger (for mobile prototypes) |
 
 A **POINT** is `[x, y]` in CSS pixels, `["50%", "60%"]` of the frame, `"#selector"`, or `{"el": "#selector", "x": 0.5, "y": 0.5}` for a spot inside an element. Any action can take `"ease"`: `smooth` (default, like a hand), `linear`, `in`, `out` or `inout`.
 
@@ -119,6 +120,16 @@ A **POINT** is `[x, y]` in CSS pixels, `["50%", "60%"]` of the frame, `"#selecto
 | `3x2` | 1800 × 1200 | Dribbble wide |
 
 **Zoom** (0.6–3.6, default 2) is how large the prototype appears: the page is laid out at *format ÷ zoom* CSS pixels and rendered sharply at that scale. **Resolution** (`1080`, `2k`, `3k`, `4k`) adds pixels without changing the framing.
+
+## Mobile prototypes
+
+Prototypes that show the app inside a phone frame (an `<iframe>`) work as they are: selectors reach into same-origin iframes, and animations inside them stay in time. Use the touch pointer, a soft fingertip dot, and `"swipe": true` on scrolls:
+
+```bash
+uvx protoreel record checkout-mobile.html checkout.json --format 4x5 --pointer touch
+```
+
+From an AI client, ask for "the touch pointer"; the tools take `pointer: "touch"`.
 
 ## Sound
 

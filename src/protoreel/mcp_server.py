@@ -92,6 +92,7 @@ def build_server(workspace: Workspace, studio_port: int = 8765) -> MCPServer:
         sound: bool,
         background: str | None,
         caption: str | None,
+        pointer: str = "arrow",
     ) -> RenderOptions:
         options = RenderOptions(
             format=fmt,
@@ -99,6 +100,7 @@ def build_server(workspace: Workspace, studio_port: int = 8765) -> MCPServer:
             resolution=resolution,
             fps=fps,
             cursor=cursor,
+            pointer=pointer,
             sound=sound,
             background=background or None,
             caption=caption or None,
@@ -140,6 +142,7 @@ def build_server(workspace: Workspace, studio_port: int = 8765) -> MCPServer:
         resolution: str = "1080",
         fps: int = 60,
         cursor: bool = True,
+        pointer: str = "arrow",
         sound: bool = True,
         background: str | None = None,
         caption: str | None = None,
@@ -154,10 +157,11 @@ def build_server(workspace: Workspace, studio_port: int = 8765) -> MCPServer:
         format: 4x5 (feed), 9x16 (reels), 1x1, 16x9, 4x3 or 3x2 (Dribbble).
         zoom: 0.6-3.6. Higher makes the prototype bigger in frame (default 2).
         resolution: 1080, 2k, 3k or 4k. background: optional colour behind the page, e.g. "#ffffff".
+        pointer: "arrow" for desktop prototypes, "touch" (a fingertip dot) for mobile ones.
         """
         if isinstance(script, str):
             script = json.loads(script)
-        options = options_from(format, zoom, resolution, fps, cursor, sound, background, caption)
+        options = options_from(format, zoom, resolution, fps, cursor, sound, background, caption, pointer)
         source = prototype if prototype.startswith(("http://", "https://")) else workspace.find_prototype(prototype)
         out = output_path(workspace.renders, str(source), options, output_name)
         result = await render(source, script, options, out, progress_reporter(ctx) if ctx else None)
@@ -172,6 +176,7 @@ def build_server(workspace: Workspace, studio_port: int = 8765) -> MCPServer:
         resolution: str = "1080",
         fps: int = 60,
         cursor: bool = True,
+        pointer: str = "arrow",
         smooth: bool = True,
         sound: bool = True,
         background: str | None = None,
@@ -185,7 +190,7 @@ def build_server(workspace: Workspace, studio_port: int = 8765) -> MCPServer:
         """
         saved = Take.load(workspace.find_take(take))
         options = options_from(
-            format or saved.format, zoom or saved.zoom, resolution, fps, cursor, sound, background, caption
+            format or saved.format, zoom or saved.zoom, resolution, fps, cursor, sound, background, caption, pointer
         )
         options.smooth = smooth
         prototype = workspace.find_prototype(saved.page)

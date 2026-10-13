@@ -40,6 +40,12 @@ def _add_video_options(parser: argparse.ArgumentParser, format_default: str | No
     parser.add_argument("--res", choices=list(RESOLUTIONS), default=DEFAULT_RESOLUTION, help="export resolution")
     parser.add_argument("--fps", type=int, choices=(30, 60), default=DEFAULT_FPS)
     parser.add_argument("--no-cursor", action="store_true", help="hide the on-screen pointer")
+    parser.add_argument(
+        "--pointer",
+        choices=("arrow", "touch"),
+        default="arrow",
+        help="touch draws a fingertip dot, for mobile prototypes",
+    )
     parser.add_argument("--no-sound", action="store_true", help="skip the prototype's own sound")
     parser.add_argument("--bg", help="background colour behind the page, e.g. '#ffffff'")
     parser.add_argument("--caption", help="small caption near the bottom of the frame")
@@ -53,6 +59,7 @@ def _options(args, fmt: str, zoom: float) -> RenderOptions:
         resolution=args.res,
         fps=args.fps,
         cursor=not args.no_cursor,
+        pointer=args.pointer,
         sound=not args.no_sound,
         background=args.bg,
         caption=args.caption,

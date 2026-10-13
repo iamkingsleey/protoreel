@@ -25,6 +25,16 @@ def cursor() -> str:
     return load("cursor.js")
 
 
+def locate() -> str:
+    """A function expression: (selector) => the element's box in the top page, iframes included."""
+    return load("locate.js")
+
+
+def scroll() -> str:
+    """A function expression: ([x, y, dx, dy]) => scrolls whatever is under the point."""
+    return load("scroll.js")
+
+
 def background_function() -> str:
     """The recBackground(document, color) function declaration (shared with the Studio UI)."""
     return load("background.js")

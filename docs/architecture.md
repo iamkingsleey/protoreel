@@ -16,7 +16,9 @@ src/protoreel/
 ├── browser.py        launches Chromium, installing it on first use
 ├── page_scripts/     JavaScript injected into the prototype
 │   ├── clock.js        freezes time so we can step it
-│   ├── cursor.js       the on-screen pointer
+│   ├── cursor.js       the on-screen pointer (arrow or touch dot)
+│   ├── locate.js       finds an element's box, looking inside iframes too
+│   ├── scroll.js       scrolls whatever is under the pointer
 │   └── background.js   optional backdrop colour
 └── studio/
     ├── server.py       the Studio's web server and JSON API

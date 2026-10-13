@@ -40,6 +40,7 @@ from .takes import Take, prepare_events
 from .timeline import FrameInput, script_frames, take_frames
 from .workspace import PrototypeServer
 
+POINTERS = ("arrow", "touch")
 WARM_UP_FRAMES = 30  # let entrance animations settle before filming starts
 ProgressCallback = Callable[[int, int | None], object]  # (frames done, total if known); may be async
 
@@ -51,12 +52,15 @@ class RenderOptions:
     resolution: str = DEFAULT_RESOLUTION
     fps: int = DEFAULT_FPS
     cursor: bool = True
+    pointer: str = "arrow"  # "arrow" (desktop) or "touch" (a fingertip dot, for mobile prototypes)
     smooth: bool = True  # smooth hand jitter in captured takes
     sound: bool = True
     background: str | None = None  # e.g. "#ffffff" — painted behind the page
     caption: str | None = None
 
     def geometry(self) -> FrameGeometry:
+        if self.pointer not in POINTERS:
+            raise ValueError(f"Unknown pointer '{self.pointer}'. Use {' or '.join(POINTERS)}.")
         return frame_geometry(self.format, float(self.zoom), self.resolution)
 
 
@@ -113,7 +117,7 @@ async def open_page(prototype: Path | str, options: RenderOptions):
                 await page.add_init_script(page_scripts.clock())
                 await page.goto(url, wait_until="load")
                 await page.evaluate("document.fonts ? document.fonts.ready.then(() => true) : true")
-                await page.evaluate(page_scripts.cursor(), CURSOR_SCALE)
+                await page.evaluate(page_scripts.cursor(), [CURSOR_SCALE, options.pointer])
                 await page.evaluate(page_scripts.decorations(), [options.caption or "", options.background or ""])
                 frame_ms = 1000 / options.fps
                 for _ in range(WARM_UP_FRAMES):
@@ -134,11 +138,7 @@ def element_resolver(page, viewport_width: int, viewport_height: int):
             point = {"el": point}
         if isinstance(point, dict):
             selector = point.get("el") or point.get("selector")
-            box = await page.evaluate(
-                """sel => { const e = document.querySelector(sel); if (!e) return null;
-                            const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }""",
-                selector,
-            )
+            box = await page.evaluate(page_scripts.locate(), selector)
             if box is None:
                 raise ValueError(f"No element matches the selector {selector!r}.")
             return box[0] + box[2] * float(point.get("x", 0.5)), box[1] + box[3] * float(point.get("y", 0.5))
@@ -184,10 +184,10 @@ class Player:
         if frame.text:
             await page.keyboard.type(frame.text)
         if frame.scroll != (0.0, 0.0):
-            await page.evaluate("([x, y]) => window.scrollBy(x, y)", list(frame.scroll))
+            await page.evaluate(page_scripts.scroll(), [frame.x, frame.y, *frame.scroll])
         await page.evaluate(
             "([x, y, d, s, ms]) => { window.__cursor(x, y, d, s); window.__advance(ms); }",
-            [frame.x, frame.y, frame.down, self.options.cursor, self.frame_ms],
+            [frame.x, frame.y, frame.down or frame.touch, self.options.cursor, self.frame_ms],
         )
 
 

@@ -67,6 +67,7 @@ class Jobs:
             resolution=request.get("res", "1080"),
             fps=int(request["fps"]),
             cursor=bool(request.get("cursor", True)),
+            pointer=request.get("pointer", "arrow"),
             smooth=bool(request.get("smooth", True)),
             sound=bool(request.get("sound", True)),
             background=request.get("bg") or None,
