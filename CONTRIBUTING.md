@@ -6,7 +6,7 @@ understand any file in one sitting.
 ## Set up
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/protoreel && cd protoreel
+git clone https://github.com/iamkingsleey/protoreel && cd protoreel
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 python -m playwright install chromium
