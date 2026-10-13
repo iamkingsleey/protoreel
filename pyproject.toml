@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "protoreel"
+dynamic = ["version"]
+description = "Turn HTML prototypes into frame-perfect social videos — from a Studio app or any MCP client."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Kingsley Mkpandiok" }]
+keywords = ["mcp", "prototype", "video", "playwright", "screen-recording", "design", "animation"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Multimedia :: Video",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "playwright>=1.45",
+  "mcp>=2.0,<3",
+  "imageio-ffmpeg>=0.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6"]
+
+[project.scripts]
+protoreel = "protoreel.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/YOUR_GITHUB_USERNAME/protoreel"
+Issues = "https://github.com/YOUR_GITHUB_USERNAME/protoreel/issues"
+
+[tool.hatch.version]
+path = "src/protoreel/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/protoreel"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]

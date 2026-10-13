@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Like button</title>
+<style>
+  /* A small prototype to try Protoreel with: a like button with a burst, a counter and a sound. */
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; background: #fff; font: 600 15px/1 system-ui, sans-serif; color: #111317; }
+  .card { width: 260px; padding: 20px; border-radius: 22px; background: #fff; text-align: center;
+          box-shadow: 0 0 0 .5px rgba(0,0,0,.06), 0 12px 30px -12px rgba(0,0,0,.25); }
+  .photo { height: 160px; border-radius: 14px; background: linear-gradient(135deg, #FFB772, #EE7598 55%, #5462B8); }
+  .row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+  #like { position: relative; width: 52px; height: 52px; border: 0; border-radius: 50%; background: #F3F4F6; cursor: pointer;
+          display: grid; place-items: center; transition: transform .3s cubic-bezier(.3,1.6,.5,1), background-color .3s; }
+  #like:active { transform: scale(.88); }
+  #like.on { background: #FFE8EC; }
+  #like svg path { fill: none; stroke: #111317; stroke-width: 2; transition: fill .2s, stroke .2s; }
+  #like.on svg path { fill: #F43F5E; stroke: #F43F5E; }
+  .dot { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #F43F5E; }
+  #count { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="photo"></div>
+    <div class="row"><span><span id="count">128</span> likes</span>
+      <button id="like" aria-label="Like" aria-pressed="false"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
+    </div>
+  </div>
+<script>
+  var like = document.getElementById('like'), count = document.getElementById('count'), n = 128;
+
+  /* Sound, the Protoreel way: play it live, and log it so the recorder can render the same mix. */
+  var LOG = [], ctx = null;
+  function pop(c, t){ var o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(1200, t + .06);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.25, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .14); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + .16); }
+  function sound(){ LOG.push(performance.now()); try { ctx = ctx || new AudioContext(); pop(ctx, ctx.currentTime); } catch (e) {} }
+  window.__recorderAudio = function(startMs, durationMs){
+    var rate = 48000, off = new OfflineAudioContext(1, Math.ceil(durationMs / 1000 * rate), rate);
+    LOG.forEach(function(t){ var at = (t - startMs) / 1000; if (at >= 0 && at < durationMs / 1000) pop(off, at); });
+    return off.startRendering().then(function(buf){
+      var d = buf.getChannelData(0), view = new DataView(new ArrayBuffer(44 + d.length * 2)), s = function(o, x){ for (var i = 0; i < x.length; i++) view.setUint8(o + i, x.charCodeAt(i)); };
+      s(0, 'RIFF'); view.setUint32(4, 36 + d.length * 2, true); s(8, 'WAVEfmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+      view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); s(36, 'data'); view.setUint32(40, d.length * 2, true);
+      for (var i = 0; i < d.length; i++) view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, d[i])) * 32767, true);
+      var bytes = new Uint8Array(view.buffer), bin = ''; for (var k = 0; k < bytes.length; k += 32768) bin += String.fromCharCode.apply(null, bytes.subarray(k, k + 32768));
+      return btoa(bin);
+    });
+  };
+
+  like.addEventListener('click', function(){
+    var on = !like.classList.contains('on');
+    like.classList.toggle('on', on); like.setAttribute('aria-pressed', on);
+    n += on ? 1 : -1; count.textContent = n;
+    if (!on) return;
+    sound();
+    for (var i = 0; i < 10; i++) {
+      var d = document.createElement('i'), a = i / 10 * Math.PI * 2; d.className = 'dot'; like.appendChild(d);
+      d.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + Math.cos(a) * 38 + 'px,' + Math.sin(a) * 38 + 'px) scale(0)', opacity: 0 }],
+                { duration: 600, easing: 'cubic-bezier(.2,.8,.2,1)' }).onfinish = (function(el){ return function(){ el.remove(); }; })(d);
+    }
+  });
+</script>
+</body>
+</html>

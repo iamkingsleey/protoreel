@@ -1,0 +1,31 @@
+name: Release
+
+# Push a tag like v0.2.0 to build Protoreel and publish it to PyPI.
+# One-time setup: on pypi.org, add this repository as a "trusted publisher"
+# (workflow: release.yml, environment: pypi). No API token is needed.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # lets PyPI verify this workflow instead of using a password
+      contents: write   # lets the job create the GitHub release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Check the tag matches the package version
+        run: |
+          version=$(grep -oP '__version__ = "\K[^"]+' src/protoreel/__init__.py)
+          test "v$version" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} does not match version $version"; exit 1; }
+      - name: Build
+        run: uv build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file CHANGELOG.md
